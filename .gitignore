@@ -1,0 +1,7 @@
+# git igonore for debug and settings of IR receive
+
+IR comms/IR receive/IR_receive/qqqq/.settings/
+IR comms/IR receive/IR_receive/qqqq/Debug/
+
+IR comms/IR send/IR_Send/IR_Send/.settings/
+IR comms/IR send/IR_Send/IR_Send/Debug/
