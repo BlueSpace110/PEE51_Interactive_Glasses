@@ -5,3 +5,6 @@ IR comms/IR receive/IR_receive/qqqq/Debug/
 
 IR comms/IR send/IR_Send/IR_Send/.settings/
 IR comms/IR send/IR_Send/IR_Send/Debug/
+
+IR comms/IR_Emitter64/.settings/
+IR comms/IR_Emitter64/Debug/
