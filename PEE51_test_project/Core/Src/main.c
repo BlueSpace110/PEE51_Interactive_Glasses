@@ -52,7 +52,7 @@
 /* USER CODE BEGIN PV */
 // message array is the array that is used to output the manchester encoded bits
 // this message array is thus twice as big as the amount of data sent
-int16_t data_message = (16 << 1) | 1; // data to be transmitted, first lsb need to be1 always
+int16_t data_message = 1; // data to be transmitted, first lsb need to be1 always
 uint32_t transmit_message = 0b00000000000000000000000000000001; // message to be transmitted, first two least significant bits need to be 0x01 always
 int count = 0;		// count used for keeping track of amount of times IR interrupt is entered
 
@@ -98,6 +98,18 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void user_pwm_setvalue(uint16_t value)
+{
+    TIM_OC_InitTypeDef sConfigOC;
+
+    sConfigOC.OCMode = TIM_OCMODE_PWM1;
+    sConfigOC.Pulse = value;
+    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+    HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+}
+
 void data_to_transmit() {
 	data_message = (setting_intensiteit << 1) | 0b01;
 	for (int i = 0; i < 16; i++)
@@ -143,57 +155,19 @@ void print_time(enum size size) {
 	}
 }
 
-void save_settings() {
+void save_settings(uint8_t *address, uint8_t *value) {
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WREN, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRITE, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &MODE, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &setting_isbron, 1, 100);//Bron setting
+	HAL_SPI_Transmit(&hspi1, address, 1, 100);
+	HAL_SPI_Transmit(&hspi1, value, 1, 100);//Bron setting
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRDI, 1, 100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WREN, 1, 100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRITE, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &INTENSITEIT, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &setting_intensiteit, 1, 100);//Intensiteit setting
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRDI, 1, 100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WREN, 1, 100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRITE, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &DISPERSIONTIME1, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &setting_timer_deel1, 1, 100);//Timer deel 1 setting
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRDI, 1, 100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WREN, 1, 100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRITE, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &DISPERSIONTIME2, 1, 100);
-	HAL_SPI_Transmit(&hspi1, (uint8_t*) &setting_timer_deel2, 1, 100);//Timer deel 2 setting
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 
@@ -264,7 +238,7 @@ int main(void)
 	ssd1306_WriteString("Glasses", Font_7x10, White);
 
 	ssd1306_SetCursor(0, 45);
-	ssd1306_WriteString("Software V1.0", Font_7x10, White);
+	ssd1306_WriteString("Software V1.1", Font_7x10, White);
 	// Copy all data from local screenbuffer to the screen
 	ssd1306_UpdateScreen(&hi2c1);
 
@@ -347,7 +321,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		if (save_data == 1) {
-			save_settings();
+			save_settings((uint8_t*) &MODE, (uint8_t*) &setting_isbron);
+			save_settings((uint8_t*) &INTENSITEIT, (uint8_t*) &setting_intensiteit);
+			save_settings((uint8_t*) &DISPERSIONTIME1, (uint8_t*) &setting_timer_deel1);
+			save_settings((uint8_t*) &DISPERSIONTIME2, (uint8_t*) &setting_timer_deel2);
 			save_data = 0;
 		}
 
@@ -563,6 +540,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			TIM4->CNT = 0;
 			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
 			break;
+		case 6:
+			menu_position = 5;
+			NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
+			TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
+			TIM4->CNT = 0;
+			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
+			break;
 
 		}
 	} else if (counter < counter_old) {
@@ -612,6 +596,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			TIM4->CNT = 0;
 			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
 			break;
+		case 6:
+			menu_position = 5;
+			NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
+			TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
+			TIM4->CNT = 0;
+			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
+			break;
 
 		}
 
@@ -624,12 +615,15 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (count < TRANSMISSION_SIZE) {// checks if in first 16 iterations of the message loop
 		if (transmit_message & (1 << count)) {// checks if each bit of message array is 1
-			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// start PWM to drive IR LED
+			//HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// start PWM to drive IR LED
+			user_pwm_setvalue(52);
 		} else {					// else each bit of message array is 0
-			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);// stop PWM to drive IR LED
+			//HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);// stop PWM to drive IR LED
+			user_pwm_setvalue(0);
 		}
 	} else if (count == TRANSMISSION_SIZE) {// checks if on 17th iteration of message loop
-		HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);	// stop PWM to drive IR LED
+		//HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);	// stop PWM to drive IR LED
+		user_pwm_setvalue(0);
 	} else if (count > MESSAGE_DELAY) {	// checks if message loop exceeds message_delay so that message loop resets
 		count = -1;	// resets count for message loop to -1 because next count is increased by 1 to 0
 	}
