@@ -168,11 +168,11 @@ void IR_Receive_Handler(struct Receiver *Rec) {
 				Rec->start_state = 0;
 				Rec->timeout_counter = 0;
 			}
-			if (Rec->bit_count > CAPTURED_SIZE) {// unexpected behaviour : exit statemachine and reset
-				Rec->state = 0;
-				Rec->bit_count = 0;
-				Rec->start_state = 0;
-			}
+//			if (Rec->bit_count > CAPTURED_SIZE) {// unexpected behaviour : exit statemachine and reset
+//				Rec->state = 0;
+//				Rec->bit_count = 0;
+//				Rec->start_state = 0;
+//			}		// commented out because this case will not happen
 			break;
 		case 2:
 			if (elapsed > SHORT_LOWER && elapsed < SHORT_UPPER) {// checks if elapsed short
@@ -202,11 +202,11 @@ void IR_Receive_Handler(struct Receiver *Rec) {
 				Rec->start_state = 0;
 				Rec->timeout_counter = 0;
 			}
-			if (Rec->bit_count > CAPTURED_SIZE) {// unexpected behaviour : exit statemachine and reset
-				Rec->state = 0;
-				Rec->bit_count = 0;
-				Rec->start_state = 0;
-			}
+//			if (Rec->bit_count > CAPTURED_SIZE) {// unexpected behaviour : exit statemachine and reset
+//				Rec->state = 0;
+//				Rec->bit_count = 0;
+//				Rec->start_state = 0;
+//			}		// commented out because this case will not happen
 			break;
 		case 4:
 			if (elapsed > SHORT_LOWER && elapsed < SHORT_UPPER) {// checks if elapsed short

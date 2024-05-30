@@ -60,8 +60,8 @@ all: main-build
 main-build: IR_Bril_Code.elf secondary-outputs
 
 # Tool invocations
-IR_Bril_Code.elf IR_Bril_Code.map: $(OBJS) $(USER_OBJS) C:\Users\SWIM\STM32CubeIDE\workspace_1.15.1\IR_Bril_Code\STM32F411RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "IR_Bril_Code.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\SWIM\STM32CubeIDE\workspace_1.15.1\IR_Bril_Code\STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="IR_Bril_Code.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+IR_Bril_Code.elf IR_Bril_Code.map: $(OBJS) $(USER_OBJS) C:\Users\SWIM\OneDrive\Documents\GitHub\PEE51_Interactive_Glasses\IR_Bril_Code\STM32F411RETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "IR_Bril_Code.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\SWIM\OneDrive\Documents\GitHub\PEE51_Interactive_Glasses\IR_Bril_Code\STM32F411RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="IR_Bril_Code.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
