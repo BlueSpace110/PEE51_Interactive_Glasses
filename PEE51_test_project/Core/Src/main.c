@@ -52,9 +52,13 @@
 /* USER CODE BEGIN PV */
 // message array is the array that is used to output the manchester encoded bits
 // this message array is thus twice as big as the amount of data sent
-int16_t data_message = 1; // data to be transmitted, first lsb need to be1 always
+int16_t data_message = 0; // data to be transmitted, first lsb need to be1 always
 uint32_t transmit_message = 0b00000000000000000000000000000001; // message to be transmitted, first two least significant bits need to be 0x01 always
 int count = 0;		// count used for keeping track of amount of times IR interrupt is entered
+
+uint16_t RC_counter = 0;
+uint16_t time_passed = 0;
+bool time_reached = false;
 
 //Voor menu en settings bijhouden
 int counter = 0;
@@ -111,7 +115,6 @@ void user_pwm_setvalue(uint16_t value)
 }
 
 void data_to_transmit() {
-	data_message = (setting_intensiteit << 1) | 0b01;
 	for (int i = 0; i < 16; i++)
 	{
 		if (data_message & (1 << i)) {
@@ -170,9 +173,6 @@ void save_settings(uint8_t *address, uint8_t *value) {
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRDI, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
-
-	data_to_transmit();
-
 }
 /* USER CODE END 0 */
 
@@ -211,9 +211,6 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
-//	NVIC_DisableIRQ(TIM4_IRQn);
-//	TIM4->CR1 &= ~TIM_CR1_CEN;
-//	TIM4->CNT = 0;
 
 	HAL_TIM_Encoder_Start_IT(&htim2, TIM_CHANNEL_ALL);
 
@@ -238,7 +235,7 @@ int main(void)
 	ssd1306_WriteString("Glasses", Font_7x10, White);
 
 	ssd1306_SetCursor(0, 45);
-	ssd1306_WriteString("Software V1.1", Font_7x10, White);
+	ssd1306_WriteString("Software V1.2", Font_7x10, White);
 	// Copy all data from local screenbuffer to the screen
 	ssd1306_UpdateScreen(&hi2c1);
 
@@ -441,7 +438,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 			ssd1306_SetCursor(0, 15);
 			ssd1306_WriteString("Intensity:", Font_7x10, White);
 			ssd1306_SetCursor(69, 15);
-			sprintf(str, "%d", setting_intensiteit / 12);
+			sprintf(str, "%d", setting_intensiteit / 50);
 			ssd1306_WriteString(str, Font_7x10, White);
 			ssd1306_SetCursor(0, 30);
 			ssd1306_WriteString("Dispersion:", Font_7x10, White);
@@ -482,6 +479,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		ssd1306_WriteString("Rotate to begin", Font_7x10, White);
 		setting_intensiteit = 0;
 		setting_timer = 0;
+		time_passed = 0;
+		time_reached = false;
 		menu_position = 0;
 		break;
 
@@ -512,10 +511,10 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			if (setting_intensiteit <= 0) {
 				setting_intensiteit = 0;
 			} else {
-				setting_intensiteit = setting_intensiteit - 12;
+				setting_intensiteit = setting_intensiteit - 50;
 			}
 			ssd1306_SetCursor(0, 20);
-			sprintf(str, "%d", setting_intensiteit / 12);
+			sprintf(str, "%d", setting_intensiteit / 50);
 			ssd1306_WriteString(str, Font_16x26, White);
 			break;
 		case 2:
@@ -563,13 +562,13 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			break;
 		case 1:
 			ssd1306_WriteString("Intensity ", Font_7x10, White);
-			if (setting_intensiteit >= 60) {
-				setting_intensiteit = 60;
+			if (setting_intensiteit >= 250) {
+				setting_intensiteit = 250;
 			} else {
-				setting_intensiteit = setting_intensiteit + 12;
+				setting_intensiteit = setting_intensiteit + 50;
 			}
 			ssd1306_SetCursor(0, 20);
-			sprintf(str, "%d", setting_intensiteit / 12);
+			sprintf(str, "%d", setting_intensiteit / 50);
 			ssd1306_WriteString(str, Font_16x26, White);
 			break;
 		case 2:
@@ -612,7 +611,22 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 
 }
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (setting_timer == 0 && !time_reached) {
+		data_message = (setting_intensiteit << 1) | 1;
+		time_reached = true;
+	} else if (time_passed < setting_timer && !time_reached) {
+		if (RC_counter == 0) {
+			data_message = ((time_passed * setting_intensiteit / setting_timer) << 1) | 1;
+			RC_counter = 1000;
+			time_passed++;
+		}
+	} else {
+		if (!time_reached) time_reached = true;
+		data_message = (setting_intensiteit << 1) | 1;
+	}
+
 	if (count < TRANSMISSION_SIZE) {// checks if in first 16 iterations of the message loop
 		if (transmit_message & (1 << count)) {// checks if each bit of message array is 1
 			//HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// start PWM to drive IR LED
@@ -624,10 +638,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	} else if (count == TRANSMISSION_SIZE) {// checks if on 17th iteration of message loop
 		//HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);	// stop PWM to drive IR LED
 		user_pwm_setvalue(0);
+		data_to_transmit();
 	} else if (count > MESSAGE_DELAY) {	// checks if message loop exceeds message_delay so that message loop resets
 		count = -1;	// resets count for message loop to -1 because next count is increased by 1 to 0
 	}
+
 	count++;
+
+	if (RC_counter > 0) RC_counter--;
 }
 /* USER CODE END 4 */
 
