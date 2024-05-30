@@ -1,0 +1,13 @@
+../Core/Src/main.c:88:6:IR_Timeout	2
+../Core/Src/main.c:96:6:HAL_TIM_PeriodElapsedCallback	6
+../Core/Src/main.c:125:6:IR_Receive_Handler	29
+../Core/Src/main.c:234:6:init_IR_receiver	1
+../Core/Src/main.c:250:5:main	3
+../Core/Src/main.c:321:6:SystemClock_Config	3
+../Core/Src/main.c:360:13:MX_TIM1_Init	4
+../Core/Src/main.c:403:13:MX_TIM3_Init	6
+../Core/Src/main.c:459:13:MX_TIM4_Init	4
+../Core/Src/main.c:501:13:MX_TIM5_Init	4
+../Core/Src/main.c:543:13:MX_GPIO_Init	1
+../Core/Src/main.c:570:6:HAL_GPIO_EXTI_Callback	7
+../Core/Src/main.c:592:6:Error_Handler	1

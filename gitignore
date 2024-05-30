@@ -1,0 +1,5 @@
+# git igonore for debug and settings of IR receive
+
+IR_Bril_Code/.settings/
+IR_Bril_Code/Debug/
+

@@ -1,0 +1,13 @@
+../Core/Src/main.c:88:6:IR_Timeout	16	static
+../Core/Src/main.c:96:6:HAL_TIM_PeriodElapsedCallback	24	static
+../Core/Src/main.c:125:6:IR_Receive_Handler	24	static
+../Core/Src/main.c:234:6:init_IR_receiver	16	static
+../Core/Src/main.c:250:5:main	16	static
+../Core/Src/main.c:321:6:SystemClock_Config	88	static
+../Core/Src/main.c:360:13:MX_TIM1_Init	32	static
+../Core/Src/main.c:403:13:MX_TIM3_Init	64	static
+../Core/Src/main.c:459:13:MX_TIM4_Init	32	static
+../Core/Src/main.c:501:13:MX_TIM5_Init	32	static
+../Core/Src/main.c:543:13:MX_GPIO_Init	40	static
+../Core/Src/main.c:570:6:HAL_GPIO_EXTI_Callback	16	static
+../Core/Src/main.c:592:6:Error_Handler	4	static,ignoring_inline_asm
