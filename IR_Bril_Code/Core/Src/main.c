@@ -102,24 +102,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	IR_Timeout(&Receiver4);
 
 	uint8_t PDLC_candidate = Receiver1.data >> 1;	// writes data to PDLC_Candidate
-	if(Receiver2.data > PDLC_candidate) {
-		PDLC_candidate = Receiver2.data >> 1;
+	if(Receiver2.data > PDLC_candidate) {			// checks if data Receiver2 is greater than PDLC_candidate
+		PDLC_candidate = Receiver2.data >> 1;		// updates PDLC_candidate
 	}
-	if(Receiver3.data > PDLC_candidate) {
-		PDLC_candidate = Receiver3.data >> 1;
+	if(Receiver3.data > PDLC_candidate) {			// checks if data Receiver3 is greater than PDLC_candidate
+		PDLC_candidate = Receiver3.data >> 1;		// updates PDLC_candidate
 	}
-	if(Receiver4.data > PDLC_candidate) {
-		PDLC_candidate = Receiver4.data >> 1;
+	if(Receiver4.data > PDLC_candidate) {			// checks if data Receiver4 is greater than PDLC_candidate
+		PDLC_candidate = Receiver4.data >> 1;		// updates PDLC_candidate
 	}
 
-	PDLC_setpoint = PDLC_candidate * 40;
+	PDLC_setpoint = PDLC_candidate * 40;			// updates PDLC_setpoint with 40 times the PDLC_candidate
 
-	if (PDLC_realpoint < PDLC_setpoint){
-		PDLC_realpoint+= FADEIN_SPEED;
-	} else if (PDLC_realpoint > PDLC_setpoint){
-		PDLC_realpoint-= FADEIN_SPEED;
+	if (PDLC_realpoint < PDLC_setpoint){			// checks if PDLC_realpoint is less than PDLC_setpoint
+		PDLC_realpoint+= FADEIN_SPEED;				// increments PDLC_realpoint with FADEIN_SPEED
+	} else if (PDLC_realpoint > PDLC_setpoint){		// checks if PDLC_realpoint is greater than PDLC_setpoint
+		PDLC_realpoint-= FADEIN_SPEED;				// decrements PDLC_realpoint with FADEIN_SPEED
 	}
-	TIM3->CCR3 = PDLC_realpoint;
+	TIM3->CCR3 = PDLC_realpoint;					// sets timer for new dutycycle
 }
 
 void IR_Receive_Handler(struct Receiver *Rec) {
