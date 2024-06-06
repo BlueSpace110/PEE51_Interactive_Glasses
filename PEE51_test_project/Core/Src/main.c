@@ -13,6 +13,13 @@
  * in the root directory of this software component.
  * If no LICENSE file comes with this software, it is provided AS-IS.
  *
+ * This program was made for a project named Interactive Glasses and was
+ * This constructed for the TU-Delft.
+ * Writers of this code:
+ * Mees de Jong
+ * Yu Cheng Zhong
+ * Rembrandt Dassen
+ * Martijn Koelewijn
  ******************************************************************************
  */
 /* USER CODE END Header */
@@ -30,6 +37,7 @@
 #include "stdbool.h"
 #include "stdio.h"
 #include "string.h"
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,8 +67,9 @@ int count = 0;		// count used for keeping track of amount of times IR interrupt 
 uint16_t RC_counter = 0;
 uint16_t time_passed = 0;
 bool time_reached = false;
+uint16_t Dispurtion_time = 0;
 
-//Voor menu en settings bijhouden
+// HMI settings and variables
 int counter = 0;
 int counter_old = 0;
 static int menu_position = 0;
@@ -79,7 +88,7 @@ enum size {
 	small = 0, big = 1
 };
 
-// Intructies voor EEPROM ()
+// Instructions and memory addresses for the EEPROM
 
 const uint8_t EEPROM_READ = 0b00000011;	//READ
 const uint8_t EEPROM_WRITE = 0b00000010;	//WRITE
@@ -235,7 +244,7 @@ int main(void)
 	ssd1306_WriteString("Glasses", Font_7x10, White);
 
 	ssd1306_SetCursor(0, 45);
-	ssd1306_WriteString("Software V1.2", Font_7x10, White);
+	ssd1306_WriteString("Software V1.3", Font_7x10, White);
 	// Copy all data from local screenbuffer to the screen
 	ssd1306_UpdateScreen(&hi2c1);
 
@@ -258,44 +267,51 @@ int main(void)
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_RDSR, 1, 100);
 	HAL_SPI_Receive(&hspi1, &status, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-
 	HAL_Delay(100);
+
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_READ, 1, 100);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &MODE, 1, 100);
 	HAL_SPI_Receive(&hspi1, &SETTINGS1, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
+
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_READ, 1, 100);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &INTENSITEIT, 1, 100);
 	HAL_SPI_Receive(&hspi1, &SETTINGS2, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
+
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_READ, 1, 100);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &DISPERSIONTIME1, 1, 100);
 	HAL_SPI_Receive(&hspi1, &SETTINGS3, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
+
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_READ, 1, 100);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &DISPERSIONTIME2, 1, 100);
 	HAL_SPI_Receive(&hspi1, &SETTINGS4, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
+
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_RESET);
 	HAL_SPI_Transmit(&hspi1, (uint8_t*) &EEPROM_WRDI, 1, 100);
 	HAL_GPIO_WritePin(GPIOB, EEPROM_CS_Pin, GPIO_PIN_SET);
-	SETTINGS5 = (SETTINGS3 | (SETTINGS4 << 8));
-	if (SETTINGS2 != 0 || SETTINGS5 != 0) {
+
+	SETTINGS5 = (SETTINGS3 | (SETTINGS4 << 8)); // Recover full timer value
+
+	if ((SETTINGS2 > 0 && SETTINGS2 <= 250) || (SETTINGS5 > 0 && SETTINGS5 <= 3600)) {
 		setting_isbron = SETTINGS1;
 		setting_intensiteit = SETTINGS2;
 		setting_timer = SETTINGS5;
 		menu_position = 4;
 		EXTI->SWIER |= EXTI_SWIER_SWIER14;
 
-	} else {
+	}
+	else {
 		ssd1306_Fill(Black);
 		ssd1306_UpdateScreen(&hi2c1);
 		ssd1306_SetCursor(0, 0);
@@ -375,6 +391,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	NVIC_DisableIRQ(TIM4_IRQn);
 	TIM4->CR1 &= ~TIM_CR1_CEN;
 	TIM4->CNT = 0;
+
+	// Disable receiving inteerupts
+
 	NVIC_EnableIRQ(TIM2_IRQn);
 
 	switch (menu_position) {
@@ -534,16 +553,28 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			print_time(big);
 			break;
 		case 5:
-			NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
-			TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
-			TIM4->CNT = 0;
+			if (setting_isbron) {
+				Dispurtion_time = setting_timer;
+				NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
+				TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
+				TIM4->CNT = 0;
+			}
+			else {
+				// Enable receiving interrupts
+			}
 			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
 			break;
 		case 6:
 			menu_position = 5;
-			NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
-			TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
-			TIM4->CNT = 0;
+			if (setting_isbron) {
+				Dispurtion_time = setting_timer;
+				NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
+				TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
+				TIM4->CNT = 0;
+			}
+			else {
+				// enable receiving interrupts
+			}
 			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
 			break;
 
@@ -558,7 +589,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 		case 0:
 			ssd1306_WriteString("Setup as", Font_7x10, White);
 			ssd1306_SetCursor(0, 20);
-			ssd1306_WriteString("Node", Font_16x26, White);
+			ssd1306_WriteString("(Node)", Font_16x26, White);
 			break;
 		case 1:
 			ssd1306_WriteString("Intensity ", Font_7x10, White);
@@ -590,16 +621,28 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 			print_time(big);
 			break;
 		case 5:
-			NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
-			TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
-			TIM4->CNT = 0;
+			if (setting_isbron) {
+				Dispurtion_time = setting_timer;
+				NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
+				TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
+				TIM4->CNT = 0;
+			}
+			else {
+				// Enable receiving interrupts
+			}
 			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
 			break;
 		case 6:
 			menu_position = 5;
-			NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
-			TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
-			TIM4->CNT = 0;
+			if (setting_isbron) {
+				Dispurtion_time = setting_timer;
+				NVIC_EnableIRQ(TIM4_IRQn); // Enable sending interrupe
+				TIM4->CR1 |= TIM_CR1_CEN; // Enable timer counter
+				TIM4->CNT = 0;
+			}
+			else {
+				// Enable receiving interrupts
+			}
 			NVIC_DisableIRQ(TIM2_IRQn); // Disable Rotary encoder
 			break;
 
@@ -613,14 +656,19 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if (setting_timer == 0 && !time_reached) {
+	if (Dispurtion_time == 0 && !time_reached) {
 		data_message = (setting_intensiteit << 1) | 1;
 		time_reached = true;
-	} else if (time_passed < setting_timer && !time_reached) {
+	} else if (time_passed < Dispurtion_time && !time_reached) {
 		if (RC_counter == 0) {
-			data_message = ((time_passed * setting_intensiteit / setting_timer) << 1) | 1;
-			RC_counter = 1000;
+			data_message = ((time_passed * setting_intensiteit / Dispurtion_time) << 1) | 1;
+			RC_counter = 1112; //Time needed to count to 1 second
 			time_passed++;
+			setting_timer--;
+
+			ssd1306_Fill(Black); // reset the screen.
+			print_time(big);
+			ssd1306_UpdateScreen(&hi2c1);
 		}
 	} else {
 		if (!time_reached) time_reached = true;
@@ -629,14 +677,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if (count < TRANSMISSION_SIZE) {// checks if in first 16 iterations of the message loop
 		if (transmit_message & (1 << count)) {// checks if each bit of message array is 1
-			//HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);// start PWM to drive IR LED
 			user_pwm_setvalue(52);
 		} else {					// else each bit of message array is 0
-			//HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);// stop PWM to drive IR LED
 			user_pwm_setvalue(0);
 		}
 	} else if (count == TRANSMISSION_SIZE) {// checks if on 17th iteration of message loop
-		//HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);	// stop PWM to drive IR LED
 		user_pwm_setvalue(0);
 		data_to_transmit();
 	} else if (count > MESSAGE_DELAY) {	// checks if message loop exceeds message_delay so that message loop resets
